@@ -21,12 +21,12 @@ jobs:
       
       - name: Move to right directory
         run: cd BlogEngine
-        
-      - name: Move to right directory
-        run: cd BlogEngine.NET
       
       - name: Where are we
         run: pwd
+        
+      - name: What is there
+        run: ls -lrt
     
       - name: Install dependencies
         run: dotnet restore ./BlogEngine.NET.csproj
