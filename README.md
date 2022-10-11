@@ -65,3 +65,4 @@ After install, update `machineKey` in `Web.config` with values generated with to
 More screenshots on the [website](https://blogengine.io).
 
 ![dashboard-3](https://cloud.githubusercontent.com/assets/1932785/11760070/0012f9d8-a052-11e5-84a8-e9097cb85f23.png)
+# BlogEngine
