@@ -21,6 +21,8 @@ jobs:
       
       - name: Move to right directory
         run: cd BlogEngine
+      - name: Keep moving
+        run: cd BlogEngine
       
       - name: Where are we
         run: pwd
