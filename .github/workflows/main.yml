@@ -20,7 +20,10 @@ jobs:
           include-prerelease: true
       
       - name: Move to right directory
-        run: cd BlogEngine/BlogEngine.NET
+        run: cd BlogEngine
+        
+      - name: Move to right directory
+        run: cd BlogEngine.NET
       
       - name: Where are we
         run: pwd
