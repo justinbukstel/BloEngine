@@ -1,69 +1,76 @@
-name: DotNet
-
-on:
+name: Veracode-Pipeline
+'on':
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
-    paths:
-    - '**.cs'
-    - '**.csproj'
-  
-env:
-   DOTNET_VERSION: '4.5.2'
-   ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-  
-
+    branches:
+      - main
 jobs:
   build:
-    name: build-and-test
-    runs-on: windows-latest
-    # grants permissions for the artifact to be uploaded
-    permissions:
-      contents: read
-      packages: write
+    runs-on: ubuntu-latest
     steps:
-    
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can acces it and clones the repo
-      - uses: actions/checkout@v3
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.1
+      - uses: actions/checkout@v2
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3
-        #with:
-        #  dotnet-version: ${{env.DOTNET_VERSION}}
-      - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v1
-      - run: ls
-      - run: dir
-      - name: Setup NuGet
-        uses: NuGet/setup-nuget@v1.0.2
-#      - name: Navigate to Workspace
-#        run: cd $GITHUB_WORKSPACE
-      - name: Create Build Directory
-        run: mkdir _build
-      
-      - name: Install dependencies
-        run: dotnet restore
-        
-      - name: Restore Packages
-        run: nuget restore Verademo-dotnet.sln
-
-#      - name: Build
-#        run: dotnet build --configuration Release --no-restore
-#      - name: Test
-#        run: dotnet test --no-restore --verbosity normal
-
-
-
-      - name: Build Solution
-        run: |
-          msbuild.exe Verademo-dotnet.sln  /nologo /nr:false /p:DeployOnBuild=true /p:DeployDefaultTarget=WebPublish /p:WebPublishMethod=FileSystem /p:DeleteExistingFiles=True /p:platform="Any CPU" /p:configuration="Release" /p:PublishUrl="../_build"
-      
+        uses: actions/setup-dotnet@v1
+      - name: Restore dependencies
+        run: nuget restore /BlogEngine/BlogEngine.sln
+      - name: Clean Default Build
+        run: 'msbuild /BlogEngine/BlogEngine.sln /t:clean'
+      - name: Build - was dotnet build --no-restore
+        run: >-
+          msbuild.exe Verademo-dotnet.sln /p:DeployOnBuild=true
+          /p:WebPublishMethod=Package /p:PackageAsSingleFile=true
+          /p:SkipInvalidConfigurations=true /p:PackageLocation=./..
+          /p:DebugSymbols=true /t:build
+       # Upload the artifact of the zip archive
       - name: Upload artifact
-        uses: actions/upload-artifact@v1.0.0
+        uses: actions/upload-artifact@v3.1.0
         with:
-          name: VerademoBundle
-          path: "./_build" 
-      
+          name: BlogEngine
+          path: "${{ github.workspace }}/BlogEngine.zip"
+  Pipeline_Scan:
+    needs: build
+    name: Veracode Pipeline Scan
+    runs-on: ubuntu-latest
+    steps:
+      # Prepare Environment
+      - name: Setup Java
+        uses: actions/setup-java@v3.5.1
+        with:
+          # The Java Verion
+          java-version: '11'
+          distribution: 'microsoft'
+      - name: Verify Java
+        run: 'java --version'
+      - name: Download Pipeline Scanner
+        uses: wei/curl@master
+        with:
+          args: -O https://downloads.veracode.com/securityscan/pipeline-scan-LATEST.zip
+      - name: Unzip Pipeline Scanner
+        run: unzip pipeline-scan-LATEST.zip
+      - name: Get Present Directory
+        run: pwd
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v3.0.0
+        with:
+          # Artifact Name
+          name: VerademoZip
+          # Destination Path
+          path: "${{ github.workspace }}/BlogEngine.zip"
+      - name: Confirm Contents
+        run: ls -la
+      - name: Run Pipeline Scanner
+        run: java -Dpipeline.debug=false -jar pipeline-scan.jar --veracode_api_id "${{ secrets.VERACODE_API_ID }}" --veracode_api_key "${{ secrets.VERACODE_API_KEY }}" --file "Verademo-dotnet.zip" -jf veracode-pipeline-results.json --fail_on_severity="Very High, High"
+      - name: Upload Analysis Results
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: veracode-pipeline-results.json
+          path: ${{github.workspace}}/veracode-pipeline-results.json
+
+
 
 
 
