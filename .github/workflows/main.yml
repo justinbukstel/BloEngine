@@ -16,12 +16,12 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v1
       - name: Restore dependencies
-        run: nuget restore /BlogEngine/BlogEngine.sln
+        run: nuget restore BlogEngine.sln
       - name: Clean Default Build
-        run: 'msbuild /BlogEngine/BlogEngine.sln /t:clean'
+        run: 'msbuild BlogEngine.sln /t:clean'
       - name: Build - was dotnet build --no-restore
         run: >-
-          msbuild.exe Verademo-dotnet.sln /p:DeployOnBuild=true
+          msbuild.exe BlogEngine.sln /p:DeployOnBuild=true
           /p:WebPublishMethod=Package /p:PackageAsSingleFile=true
           /p:SkipInvalidConfigurations=true /p:PackageLocation=./..
           /p:DebugSymbols=true /t:build
